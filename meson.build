@@ -189,17 +189,6 @@ map = {
   'vulkan' : ['vk_icdGetInstanceProcAddr', vk_wrappers, {}, mali_version],
 }
 
-libhook = []
-if build_hook
-  # Build hook library
-  subdir('hook')
-
-  # Recommend to link hook library before libmali
-  mali_ldflags = libhook_ldflags
-else
-  mali_ldflags = []
-endif
-
 # Create dummy source for building dummy libraries
 dummy_source = join_paths(meson.current_build_dir(), 'dummy.c')
 run_command('touch', dummy_source, check : false)
@@ -210,6 +199,17 @@ libmali = shared_library(
   dummy_source,
   install : true,
   version : mali_version)
+
+libhook = []
+if build_hook
+  # Build hook library
+  subdir('hook')
+
+  # Recommend to link hook library before libmali
+  mali_ldflags = libhook_ldflags
+else
+  mali_ldflags = []
+endif
 
 mali_ldflags += ['-L${libdir}', '-lmali']
 
@@ -239,6 +239,12 @@ foreach name, values : map
   is_opencl_icd = opencl_icd and name == 'OpenCL'
   is_vulkan_icd = name == 'vulkan'
 
+  if name == 'wayland-egl'
+    if not get_option('wayland-egl')
+      continue
+    endif
+  endif
+
   if not cc.has_function(symbol, dependencies : mali)
     continue
   endif
@@ -250,7 +256,6 @@ foreach name, values : map
       link_with : [libhook, libmali],
       install : true,
       install_dir : wrapper_libdir,
-      install_rpath : '$ORIGIN',
       version : version)
   endforeach
 
