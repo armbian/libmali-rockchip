@@ -132,7 +132,7 @@ vk_wrappers = {'MaliVulkan' : '1'}
 
 # Provide newer GBM version with hook library
 if build_hook
-  gbm_version = '23.1.3'
+  gbm_version = '25.0.0'
 elif cc.has_function('gbm_bo_get_fd_for_plane', dependencies : mali)
   gbm_version = '21.1.0'
 elif cc.has_function('gbm_bo_get_modifier', dependencies : mali)
