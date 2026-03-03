@@ -9,6 +9,10 @@
 .deps
 .libs
 TAGS
-*\.a
+*.a
+*.deb
+*.pyc
+__pycache__/
+build*/
 libmali-*
 debian/libmali-*
