@@ -198,12 +198,24 @@ map = {
 dummy_source = join_paths(meson.current_build_dir(), 'dummy.c')
 run_command('touch', dummy_source, check : false)
 
+# Detect the SONAME major version from the prebuilt library so that the dummy
+# and all wrapper libraries link against the same libmali.so.N as the prebuilt.
+# Without this, a prebuilt with SONAME libmali.so.0 would cause dh_shlibdeps to
+# look for a provider of libmali.so.1 (the meson default) outside the package.
+_soname_ver = run_command('sh', '-c',
+  'readelf -d "' + default_lib + '" 2>/dev/null | ' +
+  'sed -n \'s/.*SONAME.*\\[libmali\\.so\\.\\([0-9]*\\)\\].*/\\1/p\'',
+  check : false).stdout().strip()
+_ver_parts = mali_version.split('.')
+mali_lib_version = (_soname_ver != '' ? _soname_ver : _ver_parts[0]) + \
+  '.' + _ver_parts[1] + '.' + _ver_parts[2]
+
 # Create a dummy library which will be replaced by the prebuilt mali library
 libmali = shared_library(
   'mali',
   dummy_source,
   install : true,
-  version : mali_version)
+  version : mali_lib_version)
 
 libhook = []
 if build_hook
