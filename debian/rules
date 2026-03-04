@@ -4,6 +4,7 @@
 export DH_VERBOSE = 1
 
 TARGETS = $(shell cat debian/targets | grep $(DEB_HOST_GNU_TYPE))
+NPROC := $(shell nproc)
 
 override_dh_clean:
 	dh_clean
@@ -11,35 +12,32 @@ override_dh_clean:
 	rm -rf debian/libmali-*/
 
 override_dh_auto_configure:
-	for target in $(TARGETS); do \
-		export $$(scripts/parse_name.sh $$target); \
+	printf '%s\n' $(TARGETS) | xargs -P$(NPROC) -I{} sh -c '\
+		target="{}"; \
+		eval "$$(scripts/parse_name.sh $$target)"; \
 		dh_auto_configure --builddirectory=$$name -- \
 			-Darch=$${target%%-*} -Dgpu=$$gpu \
 			-Dversion=$$version -Dsubversion=$$subversion \
-			-Dplatform=$$platform -Dvendor-package=true -Dwrappers=enabled; \
-	done
+			-Dplatform=$$platform -Dvendor-package=true -Dwrappers=enabled'
 
 override_dh_auto_build:
 override_dh_auto_test:
 
 override_dh_auto_install:
-	for target in $(TARGETS); do \
-		export $$(scripts/parse_name.sh $$target); \
+	printf '%s\n' $(TARGETS) | xargs -P$(NPROC) -I{} sh -c '\
+		eval "$$(scripts/parse_name.sh {})"; \
 		dh_auto_install --builddirectory=$$name \
-			--destdir=debian/$$name; \
-	done
+			--destdir=debian/$$name'
 
 override_dh_makeshlibs:
-	for target in $(TARGETS); do \
-		export $$(scripts/parse_name.sh $$target); \
-		dh_makeshlibs -p$$name; \
-	done
+	printf '%s\n' $(TARGETS) | xargs -P$(NPROC) -I{} sh -c '\
+		eval "$$(scripts/parse_name.sh {})"; \
+		dh_makeshlibs -p$$name'
 
 override_dh_shlibdeps:
-	for target in $(TARGETS); do \
-		export $$(scripts/parse_name.sh $$target); \
-		dh_shlibdeps -p$$name -- -Sdebian/$$name; \
-	done
+	printf '%s\n' $(TARGETS) | xargs -P$(NPROC) -I{} sh -c '\
+		eval "$$(scripts/parse_name.sh {})"; \
+		dh_shlibdeps -p$$name -- -Sdebian/$$name'
 
 %:
 	dh $@ --buildsystem=meson
